@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Estimate daily travel spending and get destination-specific cash and card guidance."
+    />
+    <meta name="theme-color" content="#12372a" />
+    <title>Travel Spending Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <nav class="nav shell" aria-label="Primary navigation">
+        <a class="brand" href="#" aria-label="Travel Spending Calculator home">
+          <span class="brand-mark" aria-hidden="true">↗</span>
+          TripPocket
+        </a>
+        <a class="nav-link" href="#method">How it works</a>
+      </nav>
+      <div class="hero-content shell">
+        <div>
+          <p class="eyebrow">A clearer way to plan</p>
+          <h1>Know what to spend.<br /><em>Know how to carry it.</em></h1>
+          <p class="hero-copy">
+            Build a realistic day-to-day travel budget, convert it with current rates, and get
+            practical cash-versus-card guidance for your destination.
+          </p>
+        </div>
+        <div class="hero-stamp" aria-hidden="true">
+          <span>PLAN</span>
+          <strong>✦</strong>
+          <span>GO</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="shell main-grid">
+      <section class="planner-card" aria-labelledby="planner-title">
+        <div class="section-heading">
+          <p class="step">01 / Your trip</p>
+          <h2 id="planner-title">Shape your daily spend</h2>
+          <p>Flights and lodging stay out of the estimate, so you can focus on money in your pocket.</p>
+        </div>
+
+        <form id="trip-form" novalidate>
+          <div class="field full-field">
+            <label for="destination">Destination</label>
+            <div class="select-wrap">
+              <select id="destination" name="destination"></select>
+            </div>
+            <p id="destination-meta" class="field-hint" aria-live="polite"></p>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="days">Number of days</label>
+              <input id="days" name="days" type="number" min="1" max="365" step="1" value="7" inputmode="numeric" />
+            </div>
+            <div class="field">
+              <label for="people">Number of people</label>
+              <input id="people" name="people" type="number" min="1" max="50" step="1" value="2" inputmode="numeric" />
+            </div>
+          </div>
+
+          <fieldset class="slider-group">
+            <legend>Shopping</legend>
+            <div class="slider-field">
+              <div class="slider-label">
+                <label for="shopping-time">Time spent shopping</label>
+                <output id="shopping-time-value" for="shopping-time"></output>
+              </div>
+              <input id="shopping-time" type="range" min="0" max="4" step="1" value="2" />
+              <div class="range-ends"><span>None</span><span>Main event</span></div>
+            </div>
+            <div class="slider-field">
+              <div class="slider-label">
+                <label for="shopping-price">Typical item price</label>
+                <output id="shopping-price-value" for="shopping-price"></output>
+              </div>
+              <input id="shopping-price" type="range" min="0" max="2" step="1" value="1" />
+              <div class="range-ends"><span>Cheap souvenirs</span><span>Boutique / designer</span></div>
+            </div>
+          </fieldset>
+
+          <fieldset class="slider-group">
+            <legend>Daily style</legend>
+            <div class="slider-field">
+              <div class="slider-label">
+                <label for="activities">Activities level</label>
+                <output id="activities-value" for="activities"></output>
+              </div>
+              <input id="activities" type="range" min="0" max="2" step="1" value="1" />
+              <div class="range-ends"><span>Free & easy</span><span>Big-ticket</span></div>
+            </div>
+            <div class="slider-field">
+              <div class="slider-label">
+                <label for="meals">Meal style</label>
+                <output id="meals-value" for="meals"></output>
+              </div>
+              <input id="meals" type="range" min="0" max="3" step="1" value="1" />
+              <div class="range-ends"><span>Street food</span><span>Fine dining</span></div>
+            </div>
+          </fieldset>
+        </form>
+      </section>
+
+      <aside id="results" class="results-card" aria-labelledby="results-title" aria-live="polite">
+        <div class="results-topline">
+          <div>
+            <p class="step light">02 / Your estimate</p>
+            <h2 id="results-title">Spending plan</h2>
+          </div>
+          <span id="currency-badge" class="currency-badge"></span>
+        </div>
+
+        <div class="grand-total">
+          <p>Estimated trip spending</p>
+          <strong id="total-usd">$0.00</strong>
+          <span id="total-local"></span>
+        </div>
+        <div class="daily-total">
+          <span>Per person, per day</span>
+          <strong id="daily-figure"></strong>
+        </div>
+
+        <div class="breakdown-wrap">
+          <table>
+            <caption class="sr-only">Trip spending breakdown</caption>
+            <thead>
+              <tr><th scope="col">Category</th><th scope="col">USD</th><th scope="col" id="local-column">Local</th></tr>
+            </thead>
+            <tbody id="breakdown-body"></tbody>
+          </table>
+        </div>
+
+        <p id="rate-status" class="rate-status"></p>
+      </aside>
+
+      <section id="payment-panel" class="payment-card" aria-labelledby="payment-title">
+        <div class="payment-icon" aria-hidden="true">◇</div>
+        <div class="payment-content">
+          <p class="step">03 / Pay like a local</p>
+          <div class="payment-title-row">
+            <h2 id="payment-title"></h2>
+            <span id="acceptance-badge" class="acceptance-badge"></span>
+          </div>
+          <p id="payment-summary" class="payment-summary"></p>
+          <div id="payment-actions" class="payment-actions"></div>
+          <blockquote id="destination-note"></blockquote>
+        </div>
+      </section>
+
+      <section id="other-expenses" class="other-card" aria-labelledby="other-title">
+        <div class="section-heading compact">
+          <p class="step">Before you zip the bag</p>
+          <h2 id="other-title">Other expenses to consider</h2>
+          <p>These are intentionally not included in the spending estimate above.</p>
+        </div>
+        <ul class="checklist">
+          <li><span>01</span><div><strong>Getting there & staying</strong><p>Flights, lodging, airport transfers, and local transport.</p></div></li>
+          <li><span>02</span><div><strong>Protection & paperwork</strong><p>Travel insurance, visas, entry fees, vaccinations, and medications.</p></div></li>
+          <li><span>03</span><div><strong>Staying connected</strong><p>SIM/eSIM plans or international roaming.</p></div></li>
+          <li><span>04</span><div><strong>Travel extras</strong><p>Checked-bag fees, ATM fees, and foreign-transaction fees.</p></div></li>
+          <li><span>05</span><div><strong>Tips & service</strong><p id="tip-note"></p></div></li>
+          <li><span>06</span><div><strong>Entry check</strong><p id="visa-note"></p></div></li>
+          <li><span>07</span><div><strong>Emergency cushion</strong><p>Keep another 10–15% of your total trip cost available for the unexpected.</p></div></li>
+        </ul>
+      </section>
+
+      <section id="method" class="method-card" aria-labelledby="method-title">
+        <p class="step">The method</p>
+        <h2 id="method-title">Transparent by design</h2>
+        <p>
+          We start with tunable US daily baselines for meals, activities, and shopping, adjust
+          them for your travel style and destination price level, then add a 10% miscellaneous
+          buffer. Exchange rates are fetched on load and cached for resilience.
+        </p>
+      </section>
+    </main>
+
+    <footer class="shell">
+      <a class="brand footer-brand" href="#"><span class="brand-mark" aria-hidden="true">↗</span>TripPocket</a>
+      <p>Plan thoughtfully. Spend confidently.</p>
+    </footer>
+
+    <noscript>This calculator requires JavaScript to update your estimate.</noscript>
+    <script src="app.js"></script>
+  </body>
+</html>
