@@ -478,8 +478,9 @@
     activities: document.querySelector("#activities"),
     meals: document.querySelector("#meals"),
     totalUsd: document.querySelector("#total-usd"),
-    localTotals: document.querySelector("#local-totals"),
     dailyFigure: document.querySelector("#daily-figure"),
+    cashSummaryBody: document.querySelector("#cash-summary-body"),
+    cashSummaryFoot: document.querySelector("#cash-summary-foot"),
     breakdownBody: document.querySelector("#breakdown-body"),
     currencyBadge: document.querySelector("#currency-badge"),
     localColumn: document.querySelector("#local-column"),
@@ -630,19 +631,6 @@
     elements.currencyBadge.textContent = `${estimate.legs.length} ${estimate.legs.length === 1 ? "leg" : "legs"}`;
     elements.localColumn.textContent = "Local by leg";
 
-    elements.localTotals.replaceChildren(...estimate.legs.map((legEstimate, index) => {
-      const destination = legEstimate.destination;
-      const rate = exchangeData.rates[destination.currency] || FALLBACK_RATES[destination.currency] || 1;
-      const line = document.createElement("div");
-      line.className = "local-total-line";
-      const label = document.createElement("span");
-      const amount = document.createElement("strong");
-      label.textContent = `${index + 1}. ${destination.name}`;
-      amount.textContent = formatLocal(legEstimate.total * rate, destination);
-      line.append(label, amount);
-      return line;
-    }));
-
     const rows = [
       ["Meals", estimate.meals],
       ["Activities", estimate.activities],
@@ -691,13 +679,14 @@
     }
 
     const recommendationGroups = new Map();
-    estimate.legs.forEach((legEstimate) => {
+    estimate.legs.forEach((legEstimate, index) => {
       const destination = legEstimate.destination;
       const key = `${destination.country}|${destination.currency}|${destination.acceptance}`;
       if (!recommendationGroups.has(key)) {
         recommendationGroups.set(key, {
           destination: { ...destination, name: destination.country },
           names: [],
+          legs: [],
           notes: [],
           meals: 0,
           activities: 0,
@@ -709,6 +698,7 @@
       }
       const group = recommendationGroups.get(key);
       group.names.push(destination.name);
+      group.legs.push({ estimate: legEstimate, index });
       group.notes.push(`${destination.name}: ${destination.note}`);
       ["meals", "activities", "shopping", "tips", "miscellaneous", "total"]
         .forEach((category) => { group[category] += legEstimate[category]; });
@@ -723,6 +713,52 @@
     });
     const totalCashNeed = recommendationPlans
       .reduce((sum, plan) => sum + plan.recommendation.cashNeed, 0);
+    const cashSummaryRows = recommendationPlans.flatMap(({ group, rate, recommendation }) =>
+      group.legs.map(({ estimate: legEstimate, index }) => ({
+        index,
+        destination: legEstimate.destination,
+        rate,
+        spending: legEstimate.total * rate,
+        cash: recommendation.cashNeed * (legEstimate.total / group.total) * rate,
+      }))).sort((a, b) => a.index - b.index);
+    elements.cashSummaryBody.replaceChildren(...cashSummaryRows.map((item) => {
+      const row = document.createElement("tr");
+      const leg = document.createElement("th");
+      const spending = document.createElement("td");
+      const cash = document.createElement("td");
+      leg.scope = "row";
+      leg.textContent = `${item.index + 1}. ${item.destination.name}`;
+      spending.textContent = formatLocal(item.spending, item.destination);
+      cash.textContent = formatLocal(item.cash, item.destination);
+      row.append(leg, spending, cash);
+      return row;
+    }));
+    const summaryByCurrency = new Map();
+    cashSummaryRows.forEach((item) => {
+      const currency = item.destination.currency;
+      if (!summaryByCurrency.has(currency)) {
+        summaryByCurrency.set(currency, {
+          destination: item.destination,
+          spending: 0,
+          cash: 0,
+        });
+      }
+      const summary = summaryByCurrency.get(currency);
+      summary.spending += item.spending;
+      summary.cash += item.cash;
+    });
+    elements.cashSummaryFoot.replaceChildren(...[...summaryByCurrency.entries()].map(([currency, summary]) => {
+      const row = document.createElement("tr");
+      const label = document.createElement("th");
+      const spending = document.createElement("td");
+      const cash = document.createElement("td");
+      label.scope = "row";
+      label.textContent = summaryByCurrency.size === 1 ? "Trip total" : `${currency} total`;
+      spending.textContent = formatLocal(summary.spending, summary.destination);
+      cash.textContent = formatLocal(summary.cash, summary.destination);
+      row.append(label, spending, cash);
+      return row;
+    }));
     const cashByCurrency = new Map();
     recommendationPlans.forEach(({ group, rate, recommendation }) => {
       const currency = group.destination.currency;

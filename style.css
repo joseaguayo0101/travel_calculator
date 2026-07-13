@@ -560,25 +560,6 @@ input[type="range"]::-moz-range-thumb {
   color: rgba(255, 255, 255, 0.74);
 }
 
-.local-totals {
-  display: grid;
-  gap: 4px;
-  margin-top: 12px;
-}
-
-.local-total-line {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 0.76rem;
-}
-
-.local-total-line strong {
-  color: white;
-  text-align: right;
-}
-
 .daily-total {
   display: flex;
   justify-content: space-between;
@@ -591,6 +572,44 @@ input[type="range"]::-moz-range-thumb {
 .daily-total strong {
   color: white;
   text-align: right;
+}
+
+.cash-summary-wrap {
+  overflow-x: auto;
+  padding: 8px 0 22px;
+}
+
+.cash-summary {
+  min-width: 460px;
+}
+
+.cash-summary caption {
+  padding: 0 4px 10px;
+  color: white;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.cash-summary tbody th,
+.cash-summary tfoot th {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.cash-summary td:last-child {
+  color: var(--lime);
+  font-weight: 700;
+}
+
+.cash-summary tfoot th,
+.cash-summary tfoot td {
+  border-bottom: 0;
+  color: white;
+  font-weight: 700;
 }
 
 .breakdown-wrap {
@@ -909,7 +928,6 @@ footer {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .local-total-line,
   .leg-recommendation-header {
     flex-direction: column;
   }
@@ -930,6 +948,22 @@ footer {
 
   .grand-total strong {
     font-size: 3.5rem;
+  }
+
+  .cash-summary {
+    min-width: 0;
+    font-size: 0.7rem;
+  }
+
+  .cash-summary th,
+  .cash-summary td {
+    padding: 10px 2px;
+    white-space: normal;
+  }
+
+  .cash-summary tbody th,
+  .cash-summary tfoot th {
+    font-size: 0.7rem;
   }
 
   footer {

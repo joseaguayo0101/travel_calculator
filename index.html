@@ -16,7 +16,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=cash-summary-1" />
   </head>
   <body>
     <header class="hero">
@@ -140,11 +140,21 @@
         <div class="grand-total">
           <p>Estimated trip spending</p>
           <strong id="total-usd">$0.00</strong>
-          <div id="local-totals" class="local-totals"></div>
         </div>
         <div class="daily-total">
           <span>Per person, per day</span>
           <strong id="daily-figure"></strong>
+        </div>
+
+        <div class="cash-summary-wrap">
+          <table class="cash-summary">
+            <caption>Trip totals and recommended cash</caption>
+            <thead>
+              <tr><th scope="col">Trip leg</th><th scope="col">Estimated total</th><th scope="col">Carry in cash</th></tr>
+            </thead>
+            <tbody id="cash-summary-body"></tbody>
+            <tfoot id="cash-summary-foot"></tfoot>
+          </table>
         </div>
 
         <div class="breakdown-wrap">
@@ -187,6 +197,6 @@
     </footer>
 
     <noscript>This calculator requires JavaScript to update your estimate.</noscript>
-    <script src="app.js?v=local-currency-1"></script>
+    <script src="app.js?v=cash-summary-1"></script>
   </body>
 </html>

@@ -8,7 +8,8 @@ Trips begin with one leg and can contain as many additional legs as needed. The 
 includes countrywide estimates plus city/region refinements such as Guadalajara, Mérida, Oaxaca,
 Tokyo, Kyoto, Bangkok, Bali, Paris, Rome, London, New York City, and others. Each leg has its own
 duration and local-currency result. Legs with matching payment conditions share one consolidated
-recommendation, with cash amounts and covered subtotals stated in the destination currency.
+recommendation, with cash amounts and covered subtotals stated in the destination currency. The
+estimate panel surfaces each leg's estimated spending and recommended cash, plus totals by currency.
 
 **Live app:** https://joseaguayo0101.github.io/travel_calculator/
 
