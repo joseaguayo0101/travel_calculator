@@ -333,6 +333,7 @@ form {
 
 .field label,
 .slider-label label,
+.slider-label > span,
 legend {
   display: block;
   margin-bottom: 8px;
@@ -413,6 +414,55 @@ legend {
   font-size: 0.8rem;
   font-weight: 700;
   text-align: right;
+}
+
+.choice-control {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.choice-control.four-options {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.choice-control.five-options {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.choice-control button {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid #cbd4cd;
+  border-radius: 10px;
+  background: white;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  transition: border-color 140ms, background 140ms, color 140ms, transform 140ms;
+}
+
+.choice-control button:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.choice-control button[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: white;
+  box-shadow: 0 3px 10px rgba(22, 55, 45, 0.16);
+}
+
+.choice-control button:active {
+  transform: translateY(1px);
+}
+
+.choice-control button:focus-visible {
+  outline: 3px solid rgba(247, 143, 112, 0.38);
+  outline-offset: 2px;
 }
 
 input[type="range"] {
@@ -654,6 +704,13 @@ td {
   margin: 8px 0 16px;
 }
 
+.recommendation-coverage {
+  margin: 8px 0 0;
+  color: #527166;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
 .payment-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -844,6 +901,12 @@ footer {
 
   .people-field {
     max-width: none;
+  }
+
+  .choice-control,
+  .choice-control.four-options,
+  .choice-control.five-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .local-total-line,

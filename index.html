@@ -71,19 +71,29 @@
             <legend>Shopping</legend>
             <div class="slider-field">
               <div class="slider-label">
-                <label for="shopping-time">Time spent shopping</label>
-                <output id="shopping-time-value" for="shopping-time"></output>
+                <span id="shopping-time-label">Time spent shopping</span>
+                <output id="shopping-time-value"></output>
               </div>
-              <input id="shopping-time" type="range" min="0" max="4" step="1" value="2" />
-              <div class="range-ends"><span>None</span><span>Main event</span></div>
+              <input id="shopping-time" type="hidden" value="2" />
+              <div class="choice-control five-options" role="radiogroup" aria-labelledby="shopping-time-label">
+                <button type="button" data-choice-input="shopping-time" data-choice-value="0">None</button>
+                <button type="button" data-choice-input="shopping-time" data-choice-value="1">A little</button>
+                <button type="button" data-choice-input="shopping-time" data-choice-value="2">Moderate</button>
+                <button type="button" data-choice-input="shopping-time" data-choice-value="3">A lot</button>
+                <button type="button" data-choice-input="shopping-time" data-choice-value="4">Main event</button>
+              </div>
             </div>
             <div class="slider-field">
               <div class="slider-label">
-                <label for="shopping-price">Typical item price</label>
-                <output id="shopping-price-value" for="shopping-price"></output>
+                <span id="shopping-price-label">Typical item price</span>
+                <output id="shopping-price-value"></output>
               </div>
-              <input id="shopping-price" type="range" min="0" max="2" step="1" value="1" />
-              <div class="range-ends"><span>Cheap souvenirs</span><span>Boutique / designer</span></div>
+              <input id="shopping-price" type="hidden" value="1" />
+              <div class="choice-control" role="radiogroup" aria-labelledby="shopping-price-label">
+                <button type="button" data-choice-input="shopping-price" data-choice-value="0">Cheap souvenirs</button>
+                <button type="button" data-choice-input="shopping-price" data-choice-value="1">Mid-range gifts</button>
+                <button type="button" data-choice-input="shopping-price" data-choice-value="2">Boutique / designer</button>
+              </div>
             </div>
           </fieldset>
 
@@ -91,19 +101,28 @@
             <legend>Daily style</legend>
             <div class="slider-field">
               <div class="slider-label">
-                <label for="activities">Activities level</label>
-                <output id="activities-value" for="activities"></output>
+                <span id="activities-label">Activities level</span>
+                <output id="activities-value"></output>
               </div>
-              <input id="activities" type="range" min="0" max="2" step="1" value="1" />
-              <div class="range-ends"><span>Free & easy</span><span>Big-ticket</span></div>
+              <input id="activities" type="hidden" value="1" />
+              <div class="choice-control" role="radiogroup" aria-labelledby="activities-label">
+                <button type="button" data-choice-input="activities" data-choice-value="0">Free & easy</button>
+                <button type="button" data-choice-input="activities" data-choice-value="1">Museums & tours</button>
+                <button type="button" data-choice-input="activities" data-choice-value="2">Premium excursions</button>
+              </div>
             </div>
             <div class="slider-field">
               <div class="slider-label">
-                <label for="meals">Meal style</label>
-                <output id="meals-value" for="meals"></output>
+                <span id="meals-label">Meal style</span>
+                <output id="meals-value"></output>
               </div>
-              <input id="meals" type="range" min="0" max="3" step="1" value="1" />
-              <div class="range-ends"><span>Street food</span><span>Fine dining</span></div>
+              <input id="meals" type="hidden" value="1" />
+              <div class="choice-control four-options" role="radiogroup" aria-labelledby="meals-label">
+                <button type="button" data-choice-input="meals" data-choice-value="0">Street food</button>
+                <button type="button" data-choice-input="meals" data-choice-value="1">Casual</button>
+                <button type="button" data-choice-input="meals" data-choice-value="2">Nice restaurants</button>
+                <button type="button" data-choice-input="meals" data-choice-value="3">Fine dining</button>
+              </div>
             </div>
           </fieldset>
         </form>
@@ -145,27 +164,10 @@
         <div class="payment-icon" aria-hidden="true">◇</div>
         <div class="payment-content">
           <p class="step">03 / Pay like a local</p>
-          <h2 id="payment-title">A plan for every leg</h2>
-          <p class="payment-summary">Payment habits can change from one stop to the next. Use the guidance below for each leg.</p>
+          <h2 id="payment-title">One clear payment plan</h2>
+          <p class="payment-summary">Legs with the same payment conditions are combined so advice appears only once.</p>
           <div id="leg-recommendations" class="leg-recommendations"></div>
         </div>
-      </section>
-
-      <section id="other-expenses" class="other-card" aria-labelledby="other-title">
-        <div class="section-heading compact">
-          <p class="step">Before you zip the bag</p>
-          <h2 id="other-title">Other expenses to consider</h2>
-          <p>These are intentionally not included in the spending estimate above.</p>
-        </div>
-        <ul class="checklist">
-          <li><span>01</span><div><strong>Getting there & staying</strong><p>Flights, lodging, airport transfers, and local transport.</p></div></li>
-          <li><span>02</span><div><strong>Protection & paperwork</strong><p>Travel insurance, visas, entry fees, vaccinations, and medications.</p></div></li>
-          <li><span>03</span><div><strong>Staying connected</strong><p>SIM/eSIM plans or international roaming.</p></div></li>
-          <li><span>04</span><div><strong>Travel extras</strong><p>Checked-bag fees, ATM fees, and foreign-transaction fees.</p></div></li>
-          <li><span>05</span><div><strong>Tips & service</strong><p id="tip-note"></p></div></li>
-          <li><span>06</span><div><strong>Entry check</strong><p id="visa-note"></p></div></li>
-          <li><span>07</span><div><strong>Emergency cushion</strong><p>Keep another 10–15% of your total trip cost available for the unexpected.</p></div></li>
-        </ul>
       </section>
 
       <section id="method" class="method-card" aria-labelledby="method-title">

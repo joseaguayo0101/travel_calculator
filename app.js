@@ -483,14 +483,11 @@
     localColumn: document.querySelector("#local-column"),
     rateStatus: document.querySelector("#rate-status"),
     legRecommendations: document.querySelector("#leg-recommendations"),
-    tipNote: document.querySelector("#tip-note"),
-    visaNote: document.querySelector("#visa-note"),
   };
 
-  let nextLegId = 3;
+  let nextLegId = 2;
   let legs = [
     { id: 1, destinationId: "guadalajara-mexico", days: 4 },
-    { id: 2, destinationId: "merida-mexico", days: 4 },
   ];
   let exchangeData = {
     rates: FALLBACK_RATES,
@@ -511,55 +508,12 @@
 
   function renderSlider(input, labels, outputId) {
     const value = Number(input.value);
-    const progress = (value - Number(input.min)) / (Number(input.max) - Number(input.min)) * 100;
-    input.style.setProperty("--fill", `${progress}%`);
     document.querySelector(`#${outputId}`).textContent = labels[value];
-  }
-
-  function installRangeBehavior(input) {
-    let dragging = false;
-    const setFromClientX = (clientX) => {
-      const rect = input.getBoundingClientRect();
-      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-      const min = Number(input.min);
-      const max = Number(input.max);
-      const step = Number(input.step) || 1;
-      const next = Math.round((min + ratio * (max - min)) / step) * step;
-      if (String(next) !== input.value) {
-        input.value = String(next);
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-      }
-    };
-    input.addEventListener("pointerdown", (event) => {
-      dragging = true;
-      input.focus();
-      input.setPointerCapture?.(event.pointerId);
-      setFromClientX(event.clientX);
-      event.preventDefault();
-    });
-    input.addEventListener("pointermove", (event) => {
-      if (dragging) setFromClientX(event.clientX);
-    });
-    input.addEventListener("pointerup", (event) => {
-      if (!dragging) return;
-      dragging = false;
-      setFromClientX(event.clientX);
-    });
-    input.addEventListener("click", (event) => setFromClientX(event.clientX));
-    input.addEventListener("keydown", (event) => {
-      if (!["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp", "Home", "End"].includes(event.key)) return;
-      const min = Number(input.min);
-      const max = Number(input.max);
-      const step = Number(input.step) || 1;
-      const direction = event.key === "ArrowLeft" || event.key === "ArrowDown" ? -1 : 1;
-      const next = event.key === "Home"
-        ? min
-        : event.key === "End"
-          ? max
-          : Math.min(max, Math.max(min, Number(input.value) + direction * step));
-      input.value = String(next);
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      event.preventDefault();
+    document.querySelectorAll(`[data-choice-input="${input.id}"]`).forEach((button) => {
+      const selected = Number(button.dataset.choiceValue) === value;
+      button.setAttribute("role", "radio");
+      button.setAttribute("aria-checked", String(selected));
+      button.setAttribute("aria-pressed", String(selected));
     });
   }
 
@@ -647,7 +601,6 @@
       return card;
     });
     elements.legsContainer.replaceChildren(...cards);
-    elements.addLeg.disabled = legs.length >= 12;
   }
 
   function createActionItems(actions) {
@@ -734,15 +687,39 @@
       elements.rateStatus.classList.remove("warning");
     }
 
-    elements.legRecommendations.replaceChildren(...estimate.legs.map((legEstimate, index) => {
+    const recommendationGroups = new Map();
+    estimate.legs.forEach((legEstimate) => {
       const destination = legEstimate.destination;
-      const recommendation = buildRecommendation(legEstimate);
+      const key = `${destination.country}|${destination.currency}|${destination.acceptance}`;
+      if (!recommendationGroups.has(key)) {
+        recommendationGroups.set(key, {
+          destination: { ...destination, name: destination.country },
+          names: [],
+          notes: [],
+          meals: 0,
+          activities: 0,
+          shopping: 0,
+          tips: 0,
+          miscellaneous: 0,
+          total: 0,
+        });
+      }
+      const group = recommendationGroups.get(key);
+      group.names.push(destination.name);
+      group.notes.push(`${destination.name}: ${destination.note}`);
+      ["meals", "activities", "shopping", "tips", "miscellaneous", "total"]
+        .forEach((category) => { group[category] += legEstimate[category]; });
+    });
+
+    elements.legRecommendations.replaceChildren(...[...recommendationGroups.values()].map((group) => {
+      const destination = group.destination;
+      const recommendation = buildRecommendation(group);
       const card = document.createElement("article");
       card.className = "leg-recommendation";
       const header = document.createElement("div");
       header.className = "leg-recommendation-header";
       const title = document.createElement("h3");
-      title.textContent = `${index + 1}. ${destination.name} — ${recommendation.headline}`;
+      title.textContent = `${destination.name} — ${recommendation.headline}`;
       const badge = document.createElement("span");
       badge.className = "acceptance-badge";
       badge.textContent = destination.acceptance.replace("-", " ");
@@ -750,21 +727,17 @@
       const summary = document.createElement("p");
       summary.className = "payment-summary";
       summary.textContent = recommendation.summary;
+      const coverage = document.createElement("p");
+      coverage.className = "recommendation-coverage";
+      coverage.textContent = `Covers: ${group.names.join(", ")}`;
       const actions = document.createElement("div");
       actions.className = "payment-actions";
       actions.append(...createActionItems(recommendation.actions));
       const note = document.createElement("blockquote");
-      note.textContent = `${destination.name}: ${destination.note}`;
-      card.append(header, summary, actions, note);
+      note.textContent = group.notes.join(" ");
+      card.append(header, coverage, summary, actions, note);
       return card;
     }));
-
-    const countries = [...new Set(estimate.legs.map((leg) => leg.destination.country))];
-    const tipNotes = estimate.legs.map((leg) => getTailoredNotes(leg.destination).tip);
-    elements.tipNote.textContent = `Restaurant, guide/activity, and ride-service tips are included in the estimate using local customs. ${[...new Set(tipNotes)].join(" ")}`;
-    elements.visaNote.textContent = countries
-      .map((country) => `Check ${country}'s official entry and visa rules for your passport.`)
-      .join(" ");
 
     estimate.legs.forEach((legEstimate, index) => {
       const meta = elements.legsContainer.querySelector(`[data-leg-meta="${legs[index].id}"]`);
@@ -782,14 +755,18 @@
 
   function initialize() {
     renderLegControls();
-    [elements.shoppingTime, elements.shoppingPrice, elements.activities, elements.meals]
-      .forEach(installRangeBehavior);
     elements.addLeg.addEventListener("click", () => {
-      if (legs.length >= 12) return;
       legs.push({ id: nextLegId, destinationId: "mexico", days: 3 });
       nextLegId += 1;
       renderLegControls();
       render();
+    });
+    elements.form.addEventListener("click", (event) => {
+      const choice = event.target.closest("[data-choice-input]");
+      if (!choice) return;
+      const input = document.querySelector(`#${choice.dataset.choiceInput}`);
+      input.value = choice.dataset.choiceValue;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
     });
 
     elements.form.addEventListener("input", (event) => {

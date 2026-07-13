@@ -4,10 +4,11 @@ TripPocket is a responsive, client-side calculator for estimating day-to-day tra
 It covers meals, activities, shopping and gifts, plus a 10% miscellaneous buffer. It also gives
 destination-specific guidance for how much to carry in cash versus paying by card.
 
-Trips can contain up to 12 legs. The location picker includes countrywide estimates plus
-city/region refinements such as Guadalajara, Mérida, Oaxaca, Tokyo, Kyoto, Bangkok, Bali, Paris,
-Rome, London, New York City, and others. Each leg has its own duration, local-currency result, and
-payment guidance.
+Trips begin with one leg and can contain as many additional legs as needed. The location picker
+includes countrywide estimates plus city/region refinements such as Guadalajara, Mérida, Oaxaca,
+Tokyo, Kyoto, Bangkok, Bali, Paris, Rome, London, New York City, and others. Each leg has its own
+duration and local-currency result. Legs with matching payment conditions share one consolidated
+recommendation.
 
 **Live app:** https://joseaguayo0101.github.io/travel_calculator/
 
@@ -22,8 +23,7 @@ The estimate is for on-the-ground discretionary spending only:
 - a 10% miscellaneous buffer.
 
 Flights, lodging, transport, insurance, entry requirements, connectivity, baggage, medical
-preparation, payment fees, and a whole-trip emergency buffer are intentionally shown as separate
-planning reminders rather than included in the result.
+preparation, payment fees, and a whole-trip emergency buffer are outside the calculator's scope.
 
 ## Model assumptions
 
@@ -72,7 +72,7 @@ The logic suite uses Node's built-in runtime and has no package dependencies:
 node tests.js
 ```
 
-It covers slider direction, both shopping dimensions, multi-leg aggregation, regional pricing,
+It covers qualitative-control direction, both shopping dimensions, multi-leg aggregation, regional pricing,
 customary tip math, linear day/person scaling, the exact 10% buffer, three independently calculated
 scenarios, count clamping, slider extremes, destination switching, rate polling, fallback-rate
 coverage, all payment tiers, recommendation thresholds, and simulated offline behavior.
