@@ -221,7 +221,7 @@ test("all three acceptance tiers produce tier-correct guidance", () => {
   assert(cash.headline === "Plan around cash" && cash.summary.includes("85%"), "cash-heavy guidance mismatch");
 });
 
-test("recommendation percentages name their own covered subtotal", () => {
+test("recommendations use local currency and name their covered subtotal", () => {
   const result = buildRecommendation({
     destination: destination("japan"),
     scopeLabel: "Mérida and Cancún",
@@ -231,9 +231,9 @@ test("recommendation percentages name their own covered subtotal", () => {
     shopping: 245,
     tips: 0,
     miscellaneous: 55,
-  });
-  assert(result.summary.includes("$319.50"), "cash amount mismatch");
-  assert(result.summary.includes("53% of that $600.00 subtotal"), "percentage denominator is unclear or wrong");
+  }, 147);
+  assert(result.summary.includes("¥46,966.50 JPY"), "local-currency cash amount mismatch");
+  assert(result.summary.includes("53% of that ¥88,200.00 JPY subtotal"), "percentage denominator is unclear or wrong");
   assert(result.summary.includes("Mérida and Cancún"), "covered legs are not named");
 });
 
