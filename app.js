@@ -19,7 +19,9 @@
     activitiesDailyUsd: [10, 40, 90],
     shoppingTimeFactors: [0, 0.35, 0.7, 1, 1.4],
     shoppingItemDailyUsd: [12, 35, 80],
+    assumedLocalRideSpendDailyUsd: 12,
     miscellaneousRate: 0.1,
+    exchangeRatePollMs: 15 * 60 * 1000,
     cashShare: {
       mixedMeals: 0.55,
       mixedActivities: 0.35,
@@ -87,6 +89,61 @@
     { id: "vietnam", name: "Vietnam", currency: "VND", symbol: "₫", multiplier: 0.38, acceptance: "cash-heavy", note: "Cash is standard for street food, markets, local transport, and many smaller businesses." },
   ];
 
+  // City and regional values refine the countrywide baseline where traveler costs or payment
+  // habits differ materially. Countrywide entries remain available for flexible itineraries.
+  const REGIONS = [
+    { id: "guadalajara-mexico", name: "Guadalajara, Jalisco", country: "Mexico", currency: "MXN", symbol: "$", multiplier: 0.48, acceptance: "mixed", note: "Cards work well at established businesses, while mercados, street food, tips, and some taxis still call for pesos." },
+    { id: "merida-mexico", name: "Mérida, Yucatán", country: "Mexico", currency: "MXN", symbol: "$", multiplier: 0.44, acceptance: "mixed", note: "Central Mérida is card-friendly, but cash remains useful at markets, cenotes, small eateries, and villages." },
+    { id: "mexico-city-mexico", name: "Mexico City", country: "Mexico", currency: "MXN", symbol: "$", multiplier: 0.6, acceptance: "card-friendly", note: "Cards and contactless payment are widespread, with pesos still useful for markets, street stalls, and tips." },
+    { id: "oaxaca-mexico", name: "Oaxaca", country: "Mexico", currency: "MXN", symbol: "$", multiplier: 0.43, acceptance: "cash-heavy", note: "Markets, colectivos, artisan workshops, and many smaller restaurants rely on cash; carry small peso notes." },
+    { id: "cancun-mexico", name: "Cancún & Riviera Maya", country: "Mexico", currency: "MXN", symbol: "$", multiplier: 0.78, acceptance: "mixed", note: "Resorts take cards, but pesos are better for tips, local transport, cenotes, and purchases away from hotel zones." },
+    { id: "san-miguel-mexico", name: "San Miguel de Allende", country: "Mexico", currency: "MXN", symbol: "$", multiplier: 0.66, acceptance: "mixed", note: "Boutiques and restaurants commonly take cards, while markets, taxis, and tips are easier with pesos." },
+    { id: "new-york-us", name: "New York City", country: "United States", currency: "USD", symbol: "$", multiplier: 1.42, acceptance: "card-friendly", note: "Cards and contactless payment are nearly universal; keep a little cash for tips and cash-only counters." },
+    { id: "hawaii-us", name: "Hawaiʻi", country: "United States", currency: "USD", symbol: "$", multiplier: 1.48, acceptance: "card-friendly", note: "Cards are broadly accepted, though cash helps at roadside stands, food trucks, and for service tips." },
+    { id: "california-us", name: "California", country: "United States", currency: "USD", symbol: "$", multiplier: 1.24, acceptance: "card-friendly", note: "Cards are standard throughout California, but small cash is useful for tips and occasional small vendors." },
+    { id: "tokyo-japan", name: "Tokyo", country: "Japan", currency: "JPY", symbol: "¥", multiplier: 1.14, acceptance: "mixed", note: "Tokyo is increasingly card-friendly, but ramen shops, temples, older ticket machines, and tiny bars may require cash." },
+    { id: "kyoto-japan", name: "Kyoto", country: "Japan", currency: "JPY", symbol: "¥", multiplier: 1.05, acceptance: "mixed", note: "Carry yen for temples, buses, traditional shops, and small restaurants even when larger venues accept cards." },
+    { id: "hokkaido-japan", name: "Hokkaidō", country: "Japan", currency: "JPY", symbol: "¥", multiplier: 0.97, acceptance: "mixed", note: "Cards work in cities and resorts, but cash is prudent for rural restaurants, onsen, and small transit operators." },
+    { id: "bangkok-thailand", name: "Bangkok", country: "Thailand", currency: "THB", symbol: "฿", multiplier: 0.47, acceptance: "mixed", note: "Malls take cards, while street food, markets, taxis, and many independent venues are easiest with baht." },
+    { id: "chiang-mai-thailand", name: "Chiang Mai", country: "Thailand", currency: "THB", symbol: "฿", multiplier: 0.37, acceptance: "cash-heavy", note: "Night markets, songthaews, cafés, and smaller attractions rely heavily on cash; withdraw larger amounts to offset ATM fees." },
+    { id: "phuket-thailand", name: "Phuket", country: "Thailand", currency: "THB", symbol: "฿", multiplier: 0.64, acceptance: "mixed", note: "Hotels and larger venues take cards, while taxis, beach vendors, markets, and tips often require cash." },
+    { id: "bali-indonesia", name: "Bali", country: "Indonesia", currency: "IDR", symbol: "Rp", multiplier: 0.49, acceptance: "mixed", note: "Cards work at established tourist businesses, but warungs, drivers, markets, and rural stops commonly need rupiah." },
+    { id: "paris-france", name: "Paris", country: "France", currency: "EUR", symbol: "€", multiplier: 1.22, acceptance: "card-friendly", note: "Contactless cards are common; modest euro cash helps at markets, kiosks, and merchants with card minimums." },
+    { id: "french-riviera-france", name: "French Riviera", country: "France", currency: "EUR", symbol: "€", multiplier: 1.2, acceptance: "card-friendly", note: "Cards are broadly accepted, with cash useful for markets, beach vendors, and small village purchases." },
+    { id: "rome-italy", name: "Rome", country: "Italy", currency: "EUR", symbol: "€", multiplier: 1.02, acceptance: "mixed", note: "Cards are common at major venues, but cash remains useful for espresso bars, markets, and small family businesses." },
+    { id: "sicily-italy", name: "Sicily", country: "Italy", currency: "EUR", symbol: "€", multiplier: 0.76, acceptance: "mixed", note: "Cities and hotels take cards, while village cafés, markets, beach parking, and small shops may prefer cash." },
+    { id: "london-uk", name: "London", country: "United Kingdom", currency: "GBP", symbol: "£", multiplier: 1.38, acceptance: "card-friendly", note: "London is strongly contactless, including transit; only a very small emergency cash reserve is generally needed." },
+    { id: "scotland-uk", name: "Scottish Highlands", country: "United Kingdom", currency: "GBP", symbol: "£", multiplier: 1.05, acceptance: "card-friendly", note: "Cards are common, but carry some pounds for remote cafés, honesty boxes, and connectivity outages." },
+    { id: "sydney-australia", name: "Sydney", country: "Australia", currency: "AUD", symbol: "A$", multiplier: 1.28, acceptance: "card-friendly", note: "Contactless payment is standard; some restaurants and small businesses add card surcharges." },
+    { id: "patagonia-argentina", name: "Patagonia", country: "Argentina", currency: "ARS", symbol: "$", multiplier: 0.75, acceptance: "mixed", note: "Tourist businesses take cards, but connectivity and ATMs can be limited in remote towns, making cash backup important." },
+    { id: "rio-brazil", name: "Rio de Janeiro", country: "Brazil", currency: "BRL", symbol: "R$", multiplier: 0.64, acceptance: "card-friendly", note: "Cards and contactless payments are widespread, though reais help at beaches, markets, and for small tips." },
+    { id: "cape-town-south-africa", name: "Cape Town", country: "South Africa", currency: "ZAR", symbol: "R", multiplier: 0.58, acceptance: "card-friendly", note: "Cards are standard at established venues; keep limited rand for tips, parking attendants, and informal vendors." },
+    { id: "barcelona-spain", name: "Barcelona", country: "Spain", currency: "EUR", symbol: "€", multiplier: 0.92, acceptance: "card-friendly", note: "Contactless cards are broadly accepted, with a little euro cash useful at markets and tiny cafés." },
+  ];
+
+  const TIP_PROFILES = Object.freeze({
+    high: { meals: 0.2, activities: 0.15, rides: 0.18 },
+    moderate: { meals: 0.1, activities: 0.08, rides: 0.1 },
+    low: { meals: 0.03, activities: 0.03, rides: 0.03 },
+    included: { meals: 0.02, activities: 0.03, rides: 0 },
+  });
+
+  const HIGH_TIP_COUNTRIES = new Set(["United States", "Canada", "Mexico"]);
+  const INCLUDED_TIP_COUNTRIES = new Set(["France", "Italy", "Spain", "Portugal", "Belgium", "Austria"]);
+  const LOW_TIP_COUNTRIES = new Set(["Japan", "South Korea", "China", "Taiwan", "Singapore", "Australia", "New Zealand"]);
+
+  const LOCATIONS = [...DESTINATIONS.map((item) => ({ ...item, country: item.name, countrywide: true })), ...REGIONS]
+    .map((item) => {
+      const profile = HIGH_TIP_COUNTRIES.has(item.country)
+        ? TIP_PROFILES.high
+        : INCLUDED_TIP_COUNTRIES.has(item.country)
+          ? TIP_PROFILES.included
+          : LOW_TIP_COUNTRIES.has(item.country)
+            ? TIP_PROFILES.low
+            : TIP_PROFILES.moderate;
+      return { ...item, tipRates: profile };
+    });
+
   // Approximate July 2026 planning fallbacks, expressed as units of local currency per USD.
   // These are used only when neither the keyless live API nor a fresh cache is available.
   const FALLBACK_RATES = Object.freeze({
@@ -107,7 +164,7 @@
   });
 
   const CACHE_KEY = "tripPocketUsdRatesV1";
-  const CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+  const CACHE_MAX_AGE_MS = MODEL_CONSTANTS.exchangeRatePollMs;
 
   function clampInteger(value, min, max) {
     const parsed = Number(value);
@@ -116,7 +173,7 @@
   }
 
   function destinationById(id) {
-    return DESTINATIONS.find((item) => item.id === id) || DESTINATIONS.find((item) => item.id === "japan");
+    return LOCATIONS.find((item) => item.id === id) || LOCATIONS.find((item) => item.id === "guadalajara-mexico");
   }
 
   function normalizeInputs(input) {
@@ -134,14 +191,18 @@
     const values = normalizeInputs(input);
     const destination = typeof destinationInput === "string"
       ? destinationById(destinationInput)
-      : (destinationInput || destinationById("japan"));
+      : (destinationInput ? destinationById(destinationInput.id) : destinationById("japan"));
     const tripScale = destination.multiplier * values.days * values.people;
     const meals = MODEL_CONSTANTS.mealsDailyUsd[values.meals] * tripScale;
     const activities = MODEL_CONSTANTS.activitiesDailyUsd[values.activities] * tripScale;
     const shoppingDaily = MODEL_CONSTANTS.shoppingTimeFactors[values.shoppingTime]
       * MODEL_CONSTANTS.shoppingItemDailyUsd[values.shoppingPrice];
     const shopping = shoppingDaily * tripScale;
-    const subtotal = meals + activities + shopping;
+    const assumedRideSpend = MODEL_CONSTANTS.assumedLocalRideSpendDailyUsd * tripScale;
+    const tips = meals * destination.tipRates.meals
+      + activities * destination.tipRates.activities
+      + assumedRideSpend * destination.tipRates.rides;
+    const subtotal = meals + activities + shopping + tips;
     const miscellaneous = subtotal * MODEL_CONSTANTS.miscellaneousRate;
     const total = subtotal + miscellaneous;
     return {
@@ -150,10 +211,35 @@
       meals,
       activities,
       shopping,
+      tips,
       subtotal,
       miscellaneous,
       total,
       perPersonPerDay: total / values.days / values.people,
+    };
+  }
+
+  function calculateTripEstimate(input, legs) {
+    const safeLegs = Array.isArray(legs) && legs.length
+      ? legs
+      : [{ destinationId: "guadalajara-mexico", days: 1 }];
+    const legEstimates = safeLegs.map((leg) => calculateEstimate(
+      { ...input, days: leg.days },
+      destinationById(leg.destinationId),
+    ));
+    const categoryKeys = ["meals", "activities", "shopping", "tips", "subtotal", "miscellaneous", "total"];
+    const totals = Object.fromEntries(categoryKeys.map((key) => [
+      key,
+      legEstimates.reduce((sum, estimate) => sum + estimate[key], 0),
+    ]));
+    const totalDays = legEstimates.reduce((sum, estimate) => sum + estimate.inputs.days, 0);
+    const people = legEstimates[0].inputs.people;
+    return {
+      ...totals,
+      legs: legEstimates,
+      totalDays,
+      people,
+      perPersonPerDay: totals.total / totalDays / people,
     };
   }
 
@@ -176,6 +262,7 @@
       cashNeed = estimate.meals * MODEL_CONSTANTS.cashShare.mixedMeals
         + estimate.activities * MODEL_CONSTANTS.cashShare.mixedActivities
         + estimate.shopping * MODEL_CONSTANTS.cashShare.mixedShopping
+        + (estimate.tips || 0) * 0.8
         + estimate.miscellaneous * MODEL_CONSTANTS.cashShare.mixedMiscellaneous;
       headline = "Use both cash and card";
       summary = `Set aside about ${formatUsd(cashNeed)} (${Math.round(cashNeed / total * 100)}% of this estimate) for cash-heavy meals, shopping, and smaller merchants.`;
@@ -226,6 +313,19 @@
   }
 
   function getTailoredNotes(destination) {
+    const countryKey = {
+      Japan: "japan",
+      "United States": "us",
+      Mexico: "mexico",
+      France: "france",
+      Egypt: "egypt",
+      Thailand: "thailand",
+      Vietnam: "vietnam",
+      India: "india",
+      Cambodia: "cambodia",
+      Türkiye: "turkey",
+      Brazil: "brazil",
+    }[destination.country] || destination.id;
     const tipNotes = {
       japan: "Tipping is generally not customary in Japan and may cause confusion.",
       us: "Tips of roughly 18–25% are customary at full-service restaurants in the United States.",
@@ -242,20 +342,21 @@
       brazil: "Brazil's visa rules have changed recently for some nationalities; check official requirements close to travel.",
     };
     return {
-      tip: tipNotes[destination.id]
+      tip: tipNotes[countryKey]
         || `Tipping customs vary in ${destination.name}; check local norms and whether service is already included.`,
-      visa: visaNotes[destination.id]
+      visa: visaNotes[countryKey]
         || `Check ${destination.name}'s official entry and visa rules for your passport; requirements can change.`,
     };
   }
 
   async function getExchangeData(options) {
     const forceOffline = Boolean(options && options.forceOffline);
+    const forceRefresh = Boolean(options && options.forceRefresh);
     const storage = options && options.storage;
     const fetcher = options && options.fetcher;
     const now = Date.now();
 
-    if (!forceOffline && storage) {
+    if (!forceOffline && !forceRefresh && storage) {
       try {
         const cached = JSON.parse(storage.getItem(CACHE_KEY));
         if (cached && cached.rates && now - cached.cachedAt < CACHE_MAX_AGE_MS) {
@@ -303,14 +404,59 @@
     };
   }
 
+  class ExchangeRateService {
+    constructor({ fetcher, storage, onUpdate, intervalMs, setIntervalFn, clearIntervalFn }) {
+      this.fetcher = fetcher;
+      this.storage = storage;
+      this.onUpdate = onUpdate;
+      this.intervalMs = intervalMs || MODEL_CONSTANTS.exchangeRatePollMs;
+      this.setIntervalFn = setIntervalFn || setInterval;
+      this.clearIntervalFn = clearIntervalFn || clearInterval;
+      this.timer = null;
+      this.forceOffline = false;
+    }
+
+    async refresh(forceRefresh) {
+      const data = await getExchangeData({
+        fetcher: this.fetcher,
+        storage: this.storage,
+        forceOffline: this.forceOffline,
+        forceRefresh: Boolean(forceRefresh),
+      });
+      this.onUpdate(data);
+      return data;
+    }
+
+    async start(forceOffline) {
+      this.stop();
+      this.forceOffline = Boolean(forceOffline);
+      const initial = await this.refresh(false);
+      if (!this.forceOffline) {
+        this.timer = this.setIntervalFn(() => this.refresh(true), this.intervalMs);
+      }
+      return initial;
+    }
+
+    stop() {
+      if (this.timer !== null) {
+        this.clearIntervalFn(this.timer);
+        this.timer = null;
+      }
+    }
+  }
+
   const core = {
     MODEL_CONSTANTS,
     DESTINATIONS,
+    REGIONS,
+    LOCATIONS,
     FALLBACK_RATES,
     normalizeInputs,
     calculateEstimate,
+    calculateTripEstimate,
     buildRecommendation,
     getExchangeData,
+    ExchangeRateService,
   };
 
   if (typeof module !== "undefined" && module.exports) {
@@ -322,30 +468,30 @@
 
   const elements = {
     form: document.querySelector("#trip-form"),
-    destination: document.querySelector("#destination"),
-    destinationMeta: document.querySelector("#destination-meta"),
-    days: document.querySelector("#days"),
+    legsContainer: document.querySelector("#legs-container"),
+    addLeg: document.querySelector("#add-leg"),
     people: document.querySelector("#people"),
     shoppingTime: document.querySelector("#shopping-time"),
     shoppingPrice: document.querySelector("#shopping-price"),
     activities: document.querySelector("#activities"),
     meals: document.querySelector("#meals"),
     totalUsd: document.querySelector("#total-usd"),
-    totalLocal: document.querySelector("#total-local"),
+    localTotals: document.querySelector("#local-totals"),
     dailyFigure: document.querySelector("#daily-figure"),
     breakdownBody: document.querySelector("#breakdown-body"),
     currencyBadge: document.querySelector("#currency-badge"),
     localColumn: document.querySelector("#local-column"),
     rateStatus: document.querySelector("#rate-status"),
-    paymentTitle: document.querySelector("#payment-title"),
-    acceptanceBadge: document.querySelector("#acceptance-badge"),
-    paymentSummary: document.querySelector("#payment-summary"),
-    paymentActions: document.querySelector("#payment-actions"),
-    destinationNote: document.querySelector("#destination-note"),
+    legRecommendations: document.querySelector("#leg-recommendations"),
     tipNote: document.querySelector("#tip-note"),
     visaNote: document.querySelector("#visa-note"),
   };
 
+  let nextLegId = 3;
+  let legs = [
+    { id: 1, destinationId: "guadalajara-mexico", days: 4 },
+    { id: 2, destinationId: "merida-mexico", days: 4 },
+  ];
   let exchangeData = {
     rates: FALLBACK_RATES,
     timestamp: "Built-in July 2026 planning estimate",
@@ -355,7 +501,6 @@
 
   function currentInput() {
     return {
-      days: elements.days.value,
       people: elements.people.value,
       shoppingTime: elements.shoppingTime.value,
       shoppingPrice: elements.shoppingPrice.value,
@@ -371,28 +516,182 @@
     document.querySelector(`#${outputId}`).textContent = labels[value];
   }
 
+  function installRangeBehavior(input) {
+    let dragging = false;
+    const setFromClientX = (clientX) => {
+      const rect = input.getBoundingClientRect();
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      const min = Number(input.min);
+      const max = Number(input.max);
+      const step = Number(input.step) || 1;
+      const next = Math.round((min + ratio * (max - min)) / step) * step;
+      if (String(next) !== input.value) {
+        input.value = String(next);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    };
+    input.addEventListener("pointerdown", (event) => {
+      dragging = true;
+      input.focus();
+      input.setPointerCapture?.(event.pointerId);
+      setFromClientX(event.clientX);
+      event.preventDefault();
+    });
+    input.addEventListener("pointermove", (event) => {
+      if (dragging) setFromClientX(event.clientX);
+    });
+    input.addEventListener("pointerup", (event) => {
+      if (!dragging) return;
+      dragging = false;
+      setFromClientX(event.clientX);
+    });
+    input.addEventListener("click", (event) => setFromClientX(event.clientX));
+    input.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp", "Home", "End"].includes(event.key)) return;
+      const min = Number(input.min);
+      const max = Number(input.max);
+      const step = Number(input.step) || 1;
+      const direction = event.key === "ArrowLeft" || event.key === "ArrowDown" ? -1 : 1;
+      const next = event.key === "Home"
+        ? min
+        : event.key === "End"
+          ? max
+          : Math.min(max, Math.max(min, Number(input.value) + direction * step));
+      input.value = String(next);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      event.preventDefault();
+    });
+  }
+
+  function appendLocationOptions(select, selectedId) {
+    const countries = [...new Set(LOCATIONS.map((location) => location.country))].sort();
+    countries.forEach((country) => {
+      const group = document.createElement("optgroup");
+      group.label = country;
+      LOCATIONS
+        .filter((location) => location.country === country)
+        .sort((a, b) => {
+          if (a.countrywide) return -1;
+          if (b.countrywide) return 1;
+          return a.name.localeCompare(b.name);
+        })
+        .forEach((location) => {
+          const option = document.createElement("option");
+          option.value = location.id;
+          option.textContent = location.countrywide ? `${country} — countrywide` : location.name;
+          option.selected = location.id === selectedId;
+          group.append(option);
+        });
+      select.append(group);
+    });
+  }
+
+  function renderLegControls() {
+    const cards = legs.map((leg, index) => {
+      const location = destinationById(leg.destinationId);
+      const card = document.createElement("article");
+      card.className = "leg-card";
+      card.dataset.legId = leg.id;
+
+      const header = document.createElement("div");
+      header.className = "leg-card-header";
+      const number = document.createElement("span");
+      number.className = "leg-number";
+      number.textContent = `Leg ${index + 1}`;
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "remove-leg-button";
+      remove.dataset.removeLeg = leg.id;
+      remove.textContent = "Remove";
+      remove.disabled = legs.length === 1;
+      header.append(number, remove);
+
+      const fields = document.createElement("div");
+      fields.className = "leg-fields";
+      const locationField = document.createElement("div");
+      const locationLabel = document.createElement("label");
+      locationLabel.htmlFor = `leg-location-${leg.id}`;
+      locationLabel.textContent = "City, region, or country";
+      const selectWrap = document.createElement("div");
+      selectWrap.className = "select-wrap";
+      const select = document.createElement("select");
+      select.id = `leg-location-${leg.id}`;
+      select.className = "leg-destination";
+      select.dataset.legId = leg.id;
+      appendLocationOptions(select, leg.destinationId);
+      selectWrap.append(select);
+      locationField.append(locationLabel, selectWrap);
+
+      const daysField = document.createElement("div");
+      const daysLabel = document.createElement("label");
+      daysLabel.htmlFor = `leg-days-${leg.id}`;
+      daysLabel.textContent = "Days";
+      const days = document.createElement("input");
+      days.id = `leg-days-${leg.id}`;
+      days.className = "leg-days";
+      days.dataset.legId = leg.id;
+      days.type = "number";
+      days.min = "1";
+      days.max = "365";
+      days.step = "1";
+      days.inputMode = "numeric";
+      days.value = leg.days;
+      daysField.append(daysLabel, days);
+      fields.append(locationField, daysField);
+
+      const meta = document.createElement("p");
+      meta.className = "leg-meta";
+      meta.dataset.legMeta = leg.id;
+      meta.textContent = `${location.currency} · ${location.acceptance.replace("-", " ")} · ${location.multiplier.toFixed(2)}× US baseline`;
+      card.append(header, fields, meta);
+      return card;
+    });
+    elements.legsContainer.replaceChildren(...cards);
+    elements.addLeg.disabled = legs.length >= 12;
+  }
+
+  function createActionItems(actions) {
+    return actions.map(([title, text]) => {
+      const item = document.createElement("div");
+      item.className = "action-item";
+      const strong = document.createElement("strong");
+      strong.textContent = title;
+      item.append(strong, document.createTextNode(text));
+      return item;
+    });
+  }
+
   function render() {
-    const destination = destinationById(elements.destination.value);
-    const estimate = calculateEstimate(currentInput(), destination);
-    const rate = exchangeData.rates[destination.currency] || FALLBACK_RATES[destination.currency] || 1;
-    const recommendation = buildRecommendation(estimate);
+    const estimate = calculateTripEstimate(currentInput(), legs);
 
     renderSlider(elements.shoppingTime, SLIDER_LABELS.shoppingTime, "shopping-time-value");
     renderSlider(elements.shoppingPrice, SLIDER_LABELS.shoppingPrice, "shopping-price-value");
     renderSlider(elements.activities, SLIDER_LABELS.activities, "activities-value");
     renderSlider(elements.meals, SLIDER_LABELS.meals, "meals-value");
 
-    elements.destinationMeta.textContent = `${destination.currency} · ${destination.acceptance.replace("-", " ")} · ${destination.multiplier.toFixed(2)}× US price baseline`;
     elements.totalUsd.textContent = formatUsd(estimate.total);
-    elements.totalLocal.textContent = formatLocal(estimate.total * rate, destination);
-    elements.dailyFigure.textContent = `${formatUsd(estimate.perPersonPerDay)} · ${formatLocal(estimate.perPersonPerDay * rate, destination)}`;
-    elements.currencyBadge.textContent = destination.currency;
-    elements.localColumn.textContent = destination.currency;
+    elements.dailyFigure.textContent = formatUsd(estimate.perPersonPerDay);
+    elements.currencyBadge.textContent = `${estimate.legs.length} ${estimate.legs.length === 1 ? "leg" : "legs"}`;
+    elements.localColumn.textContent = "Local by leg";
+
+    elements.localTotals.replaceChildren(...estimate.legs.map((legEstimate, index) => {
+      const destination = legEstimate.destination;
+      const rate = exchangeData.rates[destination.currency] || FALLBACK_RATES[destination.currency] || 1;
+      const line = document.createElement("div");
+      line.className = "local-total-line";
+      const label = document.createElement("span");
+      const amount = document.createElement("strong");
+      label.textContent = `${index + 1}. ${destination.name}`;
+      amount.textContent = formatLocal(legEstimate.total * rate, destination);
+      line.append(label, amount);
+      return line;
+    }));
 
     const rows = [
       ["Meals", estimate.meals],
       ["Activities", estimate.activities],
       ["Shopping & gifts", estimate.shopping],
+      ["Tips & service", estimate.tips],
       ["Misc. buffer (10%)", estimate.miscellaneous],
     ];
     elements.breakdownBody.replaceChildren(...rows.map(([label, value]) => {
@@ -402,7 +701,18 @@
       const localCell = document.createElement("td");
       labelCell.textContent = label;
       usdCell.textContent = formatUsd(value);
-      localCell.textContent = formatLocal(value * rate, destination);
+      const categoryKey = {
+        Meals: "meals",
+        Activities: "activities",
+        "Shopping & gifts": "shopping",
+        "Tips & service": "tips",
+        "Misc. buffer (10%)": "miscellaneous",
+      }[label];
+      localCell.textContent = estimate.legs.map((legEstimate) => {
+        const destination = legEstimate.destination;
+        const rate = exchangeData.rates[destination.currency] || FALLBACK_RATES[destination.currency] || 1;
+        return formatLocal(legEstimate[categoryKey] * rate, destination);
+      }).join(" · ");
       row.append(labelCell, usdCell, localCell);
       return row;
     }));
@@ -410,32 +720,59 @@
     const timestamp = exchangeData.timestamp instanceof Date
       ? exchangeData.timestamp.toLocaleString()
       : exchangeData.timestamp;
+    const currencies = [...new Set(estimate.legs.map((leg) => leg.destination.currency))];
+    const rateList = currencies.map((currency) => {
+      const rate = exchangeData.rates[currency] || FALLBACK_RATES[currency] || 1;
+      return `1 USD = ${rate.toLocaleString()} ${currency}`;
+    }).join(" · ");
     if (exchangeData.approximate) {
-      elements.rateStatus.textContent = `1 USD = ${rate.toLocaleString()} ${destination.currency} · approximate, offline rate · ${timestamp}`;
+      elements.rateStatus.textContent = `${rateList} · approximate, offline rate · ${timestamp}`;
       elements.rateStatus.classList.add("warning");
     } else {
       const sourceLabel = exchangeData.source === "cache" ? "cached live rate" : "live rate";
-      elements.rateStatus.textContent = `1 USD = ${rate.toLocaleString()} ${destination.currency} · ${sourceLabel} · updated ${timestamp}`;
+      elements.rateStatus.textContent = `${rateList} · ${sourceLabel} · updated ${timestamp} · refreshes every 15 min`;
       elements.rateStatus.classList.remove("warning");
     }
 
-    elements.paymentTitle.textContent = recommendation.headline;
-    elements.acceptanceBadge.textContent = destination.acceptance.replace("-", " ");
-    elements.paymentSummary.textContent = recommendation.summary;
-    elements.paymentActions.replaceChildren(...recommendation.actions.map(([title, text]) => {
-      const item = document.createElement("div");
-      item.className = "action-item";
-      const strong = document.createElement("strong");
-      const detail = document.createTextNode(text);
-      strong.textContent = title;
-      item.append(strong, detail);
-      return item;
+    elements.legRecommendations.replaceChildren(...estimate.legs.map((legEstimate, index) => {
+      const destination = legEstimate.destination;
+      const recommendation = buildRecommendation(legEstimate);
+      const card = document.createElement("article");
+      card.className = "leg-recommendation";
+      const header = document.createElement("div");
+      header.className = "leg-recommendation-header";
+      const title = document.createElement("h3");
+      title.textContent = `${index + 1}. ${destination.name} — ${recommendation.headline}`;
+      const badge = document.createElement("span");
+      badge.className = "acceptance-badge";
+      badge.textContent = destination.acceptance.replace("-", " ");
+      header.append(title, badge);
+      const summary = document.createElement("p");
+      summary.className = "payment-summary";
+      summary.textContent = recommendation.summary;
+      const actions = document.createElement("div");
+      actions.className = "payment-actions";
+      actions.append(...createActionItems(recommendation.actions));
+      const note = document.createElement("blockquote");
+      note.textContent = `${destination.name}: ${destination.note}`;
+      card.append(header, summary, actions, note);
+      return card;
     }));
-    elements.destinationNote.textContent = `${destination.name}: ${destination.note}`;
 
-    const tailored = getTailoredNotes(destination);
-    elements.tipNote.textContent = tailored.tip;
-    elements.visaNote.textContent = tailored.visa;
+    const countries = [...new Set(estimate.legs.map((leg) => leg.destination.country))];
+    const tipNotes = estimate.legs.map((leg) => getTailoredNotes(leg.destination).tip);
+    elements.tipNote.textContent = `Restaurant, guide/activity, and ride-service tips are included in the estimate using local customs. ${[...new Set(tipNotes)].join(" ")}`;
+    elements.visaNote.textContent = countries
+      .map((country) => `Check ${country}'s official entry and visa rules for your passport.`)
+      .join(" ");
+
+    estimate.legs.forEach((legEstimate, index) => {
+      const meta = elements.legsContainer.querySelector(`[data-leg-meta="${legs[index].id}"]`);
+      if (meta) {
+        const destination = legEstimate.destination;
+        meta.textContent = `${destination.currency} · ${destination.acceptance.replace("-", " ")} · ${destination.multiplier.toFixed(2)}× US baseline`;
+      }
+    });
   }
 
   function clampCountInput(input) {
@@ -444,39 +781,64 @@
   }
 
   function initialize() {
-    const fragment = document.createDocumentFragment();
-    DESTINATIONS.forEach((destination) => {
-      const option = document.createElement("option");
-      option.value = destination.id;
-      option.textContent = destination.name;
-      option.selected = destination.id === "japan";
-      fragment.append(option);
+    renderLegControls();
+    [elements.shoppingTime, elements.shoppingPrice, elements.activities, elements.meals]
+      .forEach(installRangeBehavior);
+    elements.addLeg.addEventListener("click", () => {
+      if (legs.length >= 12) return;
+      legs.push({ id: nextLegId, destinationId: "mexico", days: 3 });
+      nextLegId += 1;
+      renderLegControls();
+      render();
     });
-    elements.destination.append(fragment);
 
     elements.form.addEventListener("input", (event) => {
-      if (event.target === elements.days || event.target === elements.people) {
+      if (event.target === elements.people) {
         clampCountInput(event.target);
+      }
+      if (event.target.matches(".leg-days")) {
+        clampCountInput(event.target);
+        const leg = legs.find((item) => item.id === Number(event.target.dataset.legId));
+        if (leg) leg.days = clampInteger(event.target.value, 1, 365);
+      }
+      if (event.target.matches(".leg-destination")) {
+        const leg = legs.find((item) => item.id === Number(event.target.dataset.legId));
+        if (leg) leg.destinationId = event.target.value;
       }
       render();
     });
     elements.form.addEventListener("change", (event) => {
-      if (event.target === elements.days || event.target === elements.people) {
+      if (event.target === elements.people || event.target.matches(".leg-days")) {
         if (event.target.value === "") event.target.value = event.target.min;
         clampCountInput(event.target);
       }
+      if (event.target.matches(".leg-destination")) {
+        const leg = legs.find((item) => item.id === Number(event.target.dataset.legId));
+        if (leg) leg.destinationId = event.target.value;
+      }
+      render();
+    });
+    elements.legsContainer.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-remove-leg]");
+      if (!button || legs.length === 1) return;
+      legs = legs.filter((leg) => leg.id !== Number(button.dataset.removeLeg));
+      renderLegControls();
       render();
     });
 
     render();
     const forceOffline = new URLSearchParams(window.location.search).get("offline") === "1";
-    getExchangeData({
-      forceOffline,
+    const rateService = new ExchangeRateService({
       storage: window.localStorage,
       fetcher: window.fetch.bind(window),
-    }).then((data) => {
-      exchangeData = data;
-      render();
+      onUpdate(data) {
+        exchangeData = data;
+        render();
+      },
+    });
+    rateService.start(forceOffline);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden && !forceOffline) rateService.refresh(true);
     });
   }
 

@@ -4,10 +4,13 @@
 const {
   MODEL_CONSTANTS,
   DESTINATIONS,
+  LOCATIONS,
   FALLBACK_RATES,
   calculateEstimate,
+  calculateTripEstimate,
   buildRecommendation,
   getExchangeData,
+  ExchangeRateService,
 } = require("./app.js");
 
 let passed = 0;
@@ -104,30 +107,53 @@ test("miscellaneous buffer is exactly 10% of subtotal", () => {
 });
 
 test("cheap-destination hand calculation matches to the cent", () => {
-  // Thailand: (($22 meals + $10 activities + 0.35 × $12 shopping) × 0.45 × 5) × 1.10
+  // Thailand: meals $49.50 + activities $22.50 + shopping $9.45
+  // + tips (($49.50 × .10) + ($22.50 × .08) + ($27 rides × .10)) = $90.90; × 1.10.
   const result = calculateEstimate(
     { days: 5, people: 1, shoppingTime: 1, shoppingPrice: 0, activities: 0, meals: 0 },
     destination("thailand"),
   );
-  close(toCents(result.total), 89.60);
+  close(toCents(result.total), 99.99);
 });
 
 test("expensive-destination hand calculation matches to the cent", () => {
-  // Switzerland: (($160 + $90 + 1.4 × $80) × 1.60 × 7) × 1.10
+  // Switzerland: $1,792 meals + $1,008 activities + $1,254.40 shopping
+  // + $273.28 customary tips = $4,327.68; × 1.10.
   const result = calculateEstimate(
     { days: 7, people: 1, shoppingTime: 4, shoppingPrice: 2, activities: 2, meals: 3 },
     destination("switzerland"),
   );
-  close(toCents(result.total), 4459.84);
+  close(toCents(result.total), 4760.45);
 });
 
 test("long multi-person hand calculation matches to the cent", () => {
-  // Mexico: (($85 + $40 + 0.7 × $35) × 0.50 × 21 × 4) × 1.10
+  // Mexico: $3,570 meals + $1,680 activities + $1,029 shopping
+  // + $1,056.72 restaurant/activity/ride tips = $7,335.72; × 1.10.
   const result = calculateEstimate(
     { days: 21, people: 4, shoppingTime: 2, shoppingPrice: 1, activities: 1, meals: 2 },
     destination("mexico"),
   );
-  close(toCents(result.total), 6906.90);
+  close(toCents(result.total), 8069.29);
+});
+
+test("tips include meals, activities, and assumed ride services", () => {
+  const result = estimate({ days: 1, people: 1, meals: 1, activities: 1 }, "us");
+  const expected = 45 * 0.2 + 40 * 0.15 + MODEL_CONSTANTS.assumedLocalRideSpendDailyUsd * 0.18;
+  close(result.tips, expected);
+  assert(result.tips > 0, "tipped expenses were omitted");
+});
+
+test("multi-leg trips aggregate regional estimates exactly", () => {
+  const input = { ...defaults, people: 2 };
+  const trip = calculateTripEstimate(input, [
+    { destinationId: "guadalajara-mexico", days: 4 },
+    { destinationId: "merida-mexico", days: 6 },
+  ]);
+  const guadalajara = calculateEstimate({ ...input, days: 4 }, "guadalajara-mexico");
+  const merida = calculateEstimate({ ...input, days: 6 }, "merida-mexico");
+  close(trip.total, guadalajara.total + merida.total);
+  assert(trip.legs.length === 2 && trip.totalDays === 10, "leg count or total days mismatch");
+  assert(trip.legs[0].destination.multiplier !== trip.legs[1].destination.multiplier, "regional pricing was not applied");
 });
 
 test("zero and negative days or people clamp to one", () => {
@@ -166,15 +192,17 @@ test("switching destinations changes multiplier and currency", () => {
 });
 
 test("all destination currency codes have offline fallback rates", () => {
-  DESTINATIONS.forEach((item) => {
+  LOCATIONS.forEach((item) => {
     assert(Number.isFinite(FALLBACK_RATES[item.currency]), `missing ${item.currency} fallback for ${item.name}`);
   });
 });
 
 test("destination data has complete, plausible values and all payment tiers", () => {
-  assert(DESTINATIONS.length >= 40, "fewer than 40 destinations");
+  assert(LOCATIONS.length > DESTINATIONS.length, "regional destinations were not added");
+  assert(LOCATIONS.some((item) => item.id === "guadalajara-mexico"), "Guadalajara is missing");
+  assert(LOCATIONS.some((item) => item.id === "merida-mexico"), "Mérida is missing");
   const tiers = new Set();
-  DESTINATIONS.forEach((item) => {
+  LOCATIONS.forEach((item) => {
     assert(/^[A-Z]{3}$/.test(item.currency), `invalid currency code for ${item.name}`);
     assert(item.multiplier >= 0.25 && item.multiplier <= 2, `implausible multiplier for ${item.name}`);
     assert(item.note.length >= 30, `payment note is too short for ${item.name}`);
@@ -229,6 +257,40 @@ async function runAsyncTests() {
     } catch (error) {
       failed += 1;
       console.error(`✗ simulated offline mode returns labeled fallback rates\n  ${error.message}`);
+    }
+  })();
+
+  await (async () => {
+    try {
+      let scheduledDelay;
+      let updates = 0;
+      const service = new ExchangeRateService({
+        storage: null,
+        fetcher: async () => ({
+          ok: true,
+          json: async () => ({
+            result: "success",
+            rates: { USD: 1, EUR: 0.9 },
+            time_last_update_utc: "test timestamp",
+          }),
+        }),
+        onUpdate: () => { updates += 1; },
+        intervalMs: 1234,
+        setIntervalFn: (_callback, delay) => {
+          scheduledDelay = delay;
+          return 99;
+        },
+        clearIntervalFn: () => {},
+      });
+      await service.start(false);
+      assert(updates === 1, "rate service did not publish its initial result");
+      assert(scheduledDelay === 1234, "rate service did not schedule polling");
+      service.stop();
+      passed += 1;
+      console.log("✓ exchange-rate service polls the public feed on schedule");
+    } catch (error) {
+      failed += 1;
+      console.error(`✗ exchange-rate service polls the public feed on schedule\n  ${error.message}`);
     }
   })();
 

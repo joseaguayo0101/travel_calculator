@@ -53,23 +53,18 @@
         </div>
 
         <form id="trip-form" novalidate>
-          <div class="field full-field">
-            <label for="destination">Destination</label>
-            <div class="select-wrap">
-              <select id="destination" name="destination"></select>
+          <div class="trip-legs-heading">
+            <div>
+              <h3>Trip legs</h3>
+              <p>Add each city, region, or countrywide stop and the number of days you will spend there.</p>
             </div>
-            <p id="destination-meta" class="field-hint" aria-live="polite"></p>
+            <button id="add-leg" class="add-leg-button" type="button"><span aria-hidden="true">＋</span> Add leg</button>
           </div>
+          <div id="legs-container" class="legs-container"></div>
 
-          <div class="field-row">
-            <div class="field">
-              <label for="days">Number of days</label>
-              <input id="days" name="days" type="number" min="1" max="365" step="1" value="7" inputmode="numeric" />
-            </div>
-            <div class="field">
-              <label for="people">Number of people</label>
-              <input id="people" name="people" type="number" min="1" max="50" step="1" value="2" inputmode="numeric" />
-            </div>
+          <div class="field people-field">
+            <label for="people">Number of travelers</label>
+            <input id="people" name="people" type="number" min="1" max="50" step="1" value="2" inputmode="numeric" />
           </div>
 
           <fieldset class="slider-group">
@@ -120,13 +115,13 @@
             <p class="step light">02 / Your estimate</p>
             <h2 id="results-title">Spending plan</h2>
           </div>
-          <span id="currency-badge" class="currency-badge"></span>
+          <span id="currency-badge" class="currency-badge">Trip total</span>
         </div>
 
         <div class="grand-total">
           <p>Estimated trip spending</p>
           <strong id="total-usd">$0.00</strong>
-          <span id="total-local"></span>
+          <div id="local-totals" class="local-totals"></div>
         </div>
         <div class="daily-total">
           <span>Per person, per day</span>
@@ -150,13 +145,9 @@
         <div class="payment-icon" aria-hidden="true">◇</div>
         <div class="payment-content">
           <p class="step">03 / Pay like a local</p>
-          <div class="payment-title-row">
-            <h2 id="payment-title"></h2>
-            <span id="acceptance-badge" class="acceptance-badge"></span>
-          </div>
-          <p id="payment-summary" class="payment-summary"></p>
-          <div id="payment-actions" class="payment-actions"></div>
-          <blockquote id="destination-note"></blockquote>
+          <h2 id="payment-title">A plan for every leg</h2>
+          <p class="payment-summary">Payment habits can change from one stop to the next. Use the guidance below for each leg.</p>
+          <div id="leg-recommendations" class="leg-recommendations"></div>
         </div>
       </section>
 
@@ -181,9 +172,9 @@
         <p class="step">The method</p>
         <h2 id="method-title">Transparent by design</h2>
         <p>
-          We start with tunable US daily baselines for meals, activities, and shopping, adjust
-          them for your travel style and destination price level, then add a 10% miscellaneous
-          buffer. Exchange rates are fetched on load and cached for resilience.
+          We start with tunable US daily baselines for meals, activities, shopping, and customary
+          tips, then adjust each trip leg for its local price level. Exchange rates refresh from a
+          public USD feed every 15 minutes and fall back safely when the network is unavailable.
         </p>
       </section>
     </main>
