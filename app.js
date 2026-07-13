@@ -245,6 +245,7 @@
 
   function buildRecommendation(estimate) {
     const { destination, total } = estimate;
+    const scopeLabel = estimate.scopeLabel || destination.name;
     let cashNeed;
     let headline;
     let summary;
@@ -253,7 +254,7 @@
     if (destination.acceptance === "card-friendly") {
       cashNeed = total < 200 ? Math.min(50, total * 0.15) : Math.min(100, Math.max(50, total * 0.08));
       headline = "Lead with a card";
-      summary = `Plan to pay nearly everything with a no-foreign-transaction-fee card. About ${formatUsd(cashNeed)} in cash should cover tips and small vendors.`;
+      summary = `Of the ${formatUsd(total)} subtotal for ${scopeLabel}, plan to pay nearly everything with a no-foreign-transaction-fee card and carry about ${formatUsd(cashNeed)} in cash for tips and small vendors.`;
       actions.push(
         ["Cash plan", "Make one bank-affiliated ATM withdrawal on arrival; avoid repeated small withdrawals."],
         ["Card plan", "Carry a backup card separately and always choose the local currency at the terminal."],
@@ -265,15 +266,15 @@
         + (estimate.tips || 0) * 0.8
         + estimate.miscellaneous * MODEL_CONSTANTS.cashShare.mixedMiscellaneous;
       headline = "Use both cash and card";
-      summary = `Set aside about ${formatUsd(cashNeed)} (${Math.round(cashNeed / total * 100)}% of this estimate) for cash-heavy meals, shopping, and smaller merchants.`;
+      summary = `Set aside about ${formatUsd(cashNeed)} in cash for ${scopeLabel}—${Math.round(cashNeed / total * 100)}% of that ${formatUsd(total)} subtotal. Use it for cash-heavy meals, shopping, and smaller merchants.`;
       actions.push(
-        ["Cash plan", "Withdraw from bank-affiliated ATMs every few days instead of carrying the full trip amount."],
+        ["Cash plan", "Withdraw from bank-affiliated ATMs every few days instead of carrying all of this cash at once."],
         ["Card plan", "Use a no-fee card at established businesses; decline dynamic currency conversion."],
       );
     } else {
       cashNeed = total * MODEL_CONSTANTS.cashShare.cashHeavy;
       headline = "Plan around cash";
-      summary = `Expect roughly ${formatUsd(cashNeed)} (${Math.round(MODEL_CONSTANTS.cashShare.cashHeavy * 100)}% of this estimate) to be paid in cash.`;
+      summary = `Plan on roughly ${formatUsd(cashNeed)} in cash for ${scopeLabel}—${Math.round(MODEL_CONSTANTS.cashShare.cashHeavy * 100)}% of that ${formatUsd(total)} subtotal.`;
       actions.push(
         ["Carry safely", "Split reserves between bags or people, keep the bulk in a hidden pouch, and carry only one day's spend in your wallet."],
         ["Get cash wisely", "Use bank ATMs or exchange USD/EUR at banks—not airport or hotel counters—and plan around daily ATM limits."],
@@ -482,6 +483,7 @@
     currencyBadge: document.querySelector("#currency-badge"),
     localColumn: document.querySelector("#local-column"),
     rateStatus: document.querySelector("#rate-status"),
+    paymentOverview: document.querySelector("#payment-overview"),
     legRecommendations: document.querySelector("#leg-recommendations"),
   };
 
@@ -711,9 +713,16 @@
         .forEach((category) => { group[category] += legEstimate[category]; });
     });
 
-    elements.legRecommendations.replaceChildren(...[...recommendationGroups.values()].map((group) => {
+    const recommendationPlans = [...recommendationGroups.values()].map((group) => {
+      group.scopeLabel = group.names.join(" and ");
+      return { group, recommendation: buildRecommendation(group) };
+    });
+    const totalCashNeed = recommendationPlans
+      .reduce((sum, plan) => sum + plan.recommendation.cashNeed, 0);
+    elements.paymentOverview.textContent = `Across the full ${formatUsd(estimate.total)} trip estimate, plan for approximately ${formatUsd(totalCashNeed)} in cash (${Math.round(totalCashNeed / estimate.total * 100)}% overall). The allocations below show exactly which legs each amount covers.`;
+
+    elements.legRecommendations.replaceChildren(...recommendationPlans.map(({ group, recommendation }) => {
       const destination = group.destination;
-      const recommendation = buildRecommendation(group);
       const card = document.createElement("article");
       card.className = "leg-recommendation";
       const header = document.createElement("div");
